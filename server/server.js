@@ -6,6 +6,7 @@ const dotenv = require('dotenv')
 const connectDB = require('./config/db')
 const authRoutes = require('./routes/auth')
 const resumeRoutes = require('./routes/resume')
+const portfolioRoutes = require('./routes/portfolio')
 
 dotenv.config()
 connectDB()
@@ -17,6 +18,7 @@ app.use(morgan('dev'))
 app.use(express.json())
 app.use('/api/auth', authRoutes)
 app.use('/api/resume', resumeRoutes)
+app.use('/api/portfolio', portfolioRoutes)
 
 app.get('/', (req, res) => {
   res.json({ message: 'Server is running' })
