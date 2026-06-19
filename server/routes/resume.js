@@ -4,6 +4,7 @@ const multer = require('multer')
 const { PdfReader } = require('pdfreader')
 const Resume = require('../models/Resume')
 const verifyToken = require('../middleware/verifyToken')
+const { extractSkillsFromResume } = require('../services/langchain')
 
 const storage = multer.memoryStorage()
 const upload = multer({
@@ -32,12 +33,14 @@ router.post('/upload', verifyToken, upload.single('resume'), async (req, res) =>
       })
     })
 
+    const skills = await extractSkillsFromResume(rawText)
+
     const resume = await Resume.create({
       userId: req.user.id,
       originalName: req.file.originalname,
       rawText,
       fileUrl: 'local',
-      skills: [],
+      skills,
     })
 
     res.status(201).json({
