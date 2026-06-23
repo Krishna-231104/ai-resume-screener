@@ -3,6 +3,7 @@ const router = express.Router()
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const User = require('../models/User')
+const { sendWelcomeEmail } = require('../services/email')
 
 router.post('/register', async (req, res) => {
   try {
@@ -28,6 +29,8 @@ router.post('/register', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )
+
+    await sendWelcomeEmail(user.email, user.name)
 
     res.status(201).json({ token, user: { id: user._id, name: user.name, role: user.role } })
 

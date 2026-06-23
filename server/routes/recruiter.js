@@ -3,7 +3,9 @@ const router = express.Router()
 const verifyToken = require('../middleware/verifyToken')
 const Portfolio = require('../models/Portfolio')
 const Resume = require('../models/Resume')
+const User = require('../models/User')
 const { scoreCandidate } = require('../services/langchain')
+const { sendInterestEmail } = require('../services/email')
 
 router.get('/candidates', verifyToken, async (req, res) => {
   try {
@@ -35,6 +37,21 @@ router.post('/search', verifyToken, async (req, res) => {
     const ranked = scoredCandidates.sort((a, b) => b.score - a.score)
     res.json(ranked)
 
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+})router.post('/express-interest', verifyToken, async (req, res) => {
+  try {
+    const { candidateId, jobTitle } = req.body
+    const recruiter = await User.findById(req.user.id)
+    const candidate = await User.findById(candidateId)
+
+    if (!candidate) {
+      return res.status(404).json({ message: 'Candidate not found' })
+    }
+
+    await sendInterestEmail(candidate.email, candidate.name, recruiter.name, jobTitle)
+    res.json({ message: 'Interest email sent successfully!' })
   } catch (error) {
     res.status(500).json({ message: error.message })
   }

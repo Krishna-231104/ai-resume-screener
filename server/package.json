@@ -23,6 +23,7 @@
     "mongoose": "^9.6.2",
     "morgan": "^1.10.1",
     "multer": "^2.1.1",
-    "pdfreader": "^3.0.8"
+    "pdfreader": "^3.0.8",
+    "nodemailer": "^6.9.7"
   }
 }

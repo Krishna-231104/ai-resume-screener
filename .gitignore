@@ -1,1 +1,9 @@
-server/.env 
+server/.env
+server/node_modules/
+client/node_modules/
+.DS_Store
+*.log
+dist/
+build/
+.vscode/
+.env 

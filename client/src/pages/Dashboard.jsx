@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 
 function Dashboard() {
   const [user, setUser] = useState(null)
+  const [resumeFile, setResumeFile] = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadMessage, setUploadMessage] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -11,13 +14,50 @@ function Dashboard() {
       navigate('/login')
       return
     }
-    setUser(JSON.parse(storedUser))
-  }, [])
+    const parsedUser = JSON.parse(storedUser)
+    setUser(parsedUser)
+    if (parsedUser.role === 'recruiter') {
+      navigate('/recruiter')
+      return
+    }
+  }, [navigate])
 
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     navigate('/login')
+  }
+
+  const handleResumeUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    
+    setResumeFile(file)
+    setUploading(true)
+    setUploadMessage('')
+
+    const formData = new FormData()
+    formData.append('resume', file)
+
+    try {
+      const res = await fetch('http://localhost:5000/api/resume/upload', {
+        method: 'POST',
+        headers: {
+          'authorization': localStorage.getItem('token')
+        },
+        body: formData
+      })
+
+      const data = await res.json()
+      if (res.ok) {
+        setUploadMessage(`✅ Resume uploaded! Skills extracted: ${data.resume.skills.join(', ')}`)
+      } else {
+        setUploadMessage(`❌ ${data.message}`)
+      }
+    } catch (err) {
+      setUploadMessage('❌ Upload failed')
+    }
+    setUploading(false)
   }
 
   if (!user) return null
@@ -44,11 +84,18 @@ function Dashboard() {
             <h2 className="text-xl font-bold mb-2">Welcome, {user.name}!</h2>
             <p className="text-gray-500 mb-6">Build your portfolio and get discovered by recruiters.</p>
             <div className="grid grid-cols-2 gap-4">
-              <div className="border rounded-lg p-4 text-center cursor-pointer hover:border-blue-500">
+              <label className="border rounded-lg p-4 text-center cursor-pointer hover:border-blue-500">
                 <p className="text-2xl">📄</p>
                 <p className="font-medium mt-2">Upload Resume</p>
-                <p className="text-sm text-gray-400">Coming soon</p>
-              </div>
+                <p className="text-sm text-gray-400">{resumeFile ? resumeFile.name : 'PDF only'}</p>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleResumeUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
               <div
                 onClick={() => navigate('/portfolio-editor')}
                 className="border rounded-lg p-4 text-center cursor-pointer hover:border-blue-500">
@@ -57,6 +104,12 @@ function Dashboard() {
                 <p className="text-sm text-gray-400">Click to edit</p>
               </div>
             </div>
+            {uploadMessage && (
+              <p className={`mt-4 text-sm ${uploadMessage.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>
+                {uploadMessage}
+              </p>
+            )}
+            {uploading && <p className="mt-4 text-sm text-gray-500">Uploading & parsing resume...</p>}
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow p-6">
