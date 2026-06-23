@@ -40,7 +40,9 @@ router.post('/search', verifyToken, async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
-})router.post('/express-interest', verifyToken, async (req, res) => {
+})
+
+router.post('/express-interest', verifyToken, async (req, res) => {
   try {
     const { candidateId, jobTitle } = req.body
     const recruiter = await User.findById(req.user.id)
