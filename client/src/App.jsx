@@ -1,4 +1,6 @@
+import RecruiterDashboard from './pages/RecruiterDashboard'
 import PortfolioEditor from './pages/PortfolioEditor'
+import Chatbot from './pages/Chatbot'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -14,6 +16,8 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/portfolio/:username" element={<Portfolio />} />
         <Route path="/portfolio-editor" element={<PortfolioEditor />} />
+        <Route path="/recruiter" element={<RecruiterDashboard />} />
+        <Route path="/chatbot" element={<Chatbot />} />
       </Routes>
     </BrowserRouter>
   )

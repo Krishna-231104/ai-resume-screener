@@ -103,6 +103,13 @@ function Dashboard() {
                 <p className="font-medium mt-2">Edit Portfolio</p>
                 <p className="text-sm text-gray-400">Click to edit</p>
               </div>
+              <div
+                onClick={() => navigate('/chatbot')}
+                className="border rounded-lg p-4 text-center cursor-pointer hover:border-blue-500">
+                <p className="text-2xl">🤖</p>
+                <p className="font-medium mt-2">AI Assistant</p>
+                <p className="text-sm text-gray-400">Get career advice</p>
+              </div>
             </div>
             {uploadMessage && (
               <p className={`mt-4 text-sm ${uploadMessage.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>
