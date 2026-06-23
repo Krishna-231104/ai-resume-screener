@@ -49,10 +49,12 @@ function Dashboard() {
                 <p className="font-medium mt-2">Upload Resume</p>
                 <p className="text-sm text-gray-400">Coming soon</p>
               </div>
-              <div className="border rounded-lg p-4 text-center cursor-pointer hover:border-blue-500">
+              <div
+                onClick={() => navigate('/portfolio-editor')}
+                className="border rounded-lg p-4 text-center cursor-pointer hover:border-blue-500">
                 <p className="text-2xl">🎨</p>
                 <p className="font-medium mt-2">Edit Portfolio</p>
-                <p className="text-sm text-gray-400">Coming soon</p>
+                <p className="text-sm text-gray-400">Click to edit</p>
               </div>
             </div>
           </div>

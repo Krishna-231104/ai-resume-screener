@@ -1,3 +1,4 @@
+import PortfolioEditor from './pages/PortfolioEditor'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -12,6 +13,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/portfolio/:username" element={<Portfolio />} />
+        <Route path="/portfolio-editor" element={<PortfolioEditor />} />
       </Routes>
     </BrowserRouter>
   )
