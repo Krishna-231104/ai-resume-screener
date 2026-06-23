@@ -7,6 +7,7 @@ const connectDB = require('./config/db')
 const authRoutes = require('./routes/auth')
 const resumeRoutes = require('./routes/resume')
 const portfolioRoutes = require('./routes/portfolio')
+const recruiterRoutes = require('./routes/recruiter')
 
 dotenv.config()
 connectDB()
@@ -19,6 +20,10 @@ app.use(express.json())
 app.use('/api/auth', authRoutes)
 app.use('/api/resume', resumeRoutes)
 app.use('/api/portfolio', portfolioRoutes)
+app.use('/api/recruiter', recruiterRoutes)
+app.get('/test', (req, res) => {
+  res.json({ message: 'test route works' })
+})
 
 app.get('/', (req, res) => {
   res.json({ message: 'Server is running' })

@@ -27,4 +27,27 @@ const extractSkillsFromResume = async (rawText) => {
   return skills
 }
 
-module.exports = { extractSkillsFromResume }
+const scoreCandidate = async (jobDescription, resumeText) => {
+  const model = new ChatGroq({
+    apiKey: process.env.GROQ_API_KEY,
+    model: 'llama-3.3-70b-versatile',
+    temperature: 0
+  })
+
+  const prompt = PromptTemplate.fromTemplate(`
+    You are an expert recruiter. Score how well this candidate matches the job description.
+    Return ONLY a number between 0 and 100. No explanation, just the number.
+    
+    Job Description: {jobDescription}
+    
+    Candidate Resume: {resumeText}
+  `)
+
+  const chain = prompt.pipe(model)
+  const response = await chain.invoke({ jobDescription, resumeText })
+  
+  const score = parseInt(response.content.trim())
+  return isNaN(score) ? 0 : score
+}
+
+module.exports = { extractSkillsFromResume, scoreCandidate }
