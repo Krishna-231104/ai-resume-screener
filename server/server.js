@@ -29,7 +29,8 @@ app.use(cors({
   },
   credentials: true
 }))
-app.options('*', cors()) // Handle preflight requests
+app.options(/.*/, cors()) // Handle preflight requests
+
 
 app.use(morgan('dev'))
 app.use(express.json())
