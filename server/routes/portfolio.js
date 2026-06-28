@@ -33,6 +33,7 @@ router.post('/create', verifyToken, async (req, res) => {
   }
 })
 
+// IMPORTANT: /me must be before /:username to avoid Express treating 'me' as a username param
 router.get('/me', verifyToken, async (req, res) => {
   try {
     const portfolio = await Portfolio.findOne({ userId: req.user.id })
@@ -47,13 +48,17 @@ router.get('/me', verifyToken, async (req, res) => {
 
 router.put('/update', verifyToken, async (req, res) => {
   try {
-    const { bio, projects, experience, education } = req.body
+    const { bio, skills, projects, experience, education } = req.body
 
     const portfolio = await Portfolio.findOneAndUpdate(
       { userId: req.user.id },
-      { bio, projects, experience, education },
+      { bio, ...(skills && { skills }), projects, experience, education },
       { new: true }
     )
+
+    if (!portfolio) {
+      return res.status(404).json({ message: 'Portfolio not found' })
+    }
 
     res.json({ message: 'Portfolio updated', portfolio })
 

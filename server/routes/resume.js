@@ -3,8 +3,10 @@ const router = express.Router()
 const multer = require('multer')
 const { PdfReader } = require('pdfreader')
 const Resume = require('../models/Resume')
+const Portfolio = require('../models/Portfolio')
+const User = require('../models/User')
 const verifyToken = require('../middleware/verifyToken')
-const { extractSkillsFromResume } = require('../services/langchain')
+const { parseResumeToPortfolio } = require('../services/langchain')
 
 const storage = multer.memoryStorage()
 const upload = multer({
@@ -24,6 +26,7 @@ router.post('/upload', verifyToken, upload.single('resume'), async (req, res) =>
       return res.status(400).json({ message: 'No file uploaded' })
     }
 
+    // Extract raw text from PDF
     let rawText = ''
     await new Promise((resolve, reject) => {
       new PdfReader().parseBuffer(req.file.buffer, (err, item) => {
@@ -33,8 +36,12 @@ router.post('/upload', verifyToken, upload.single('resume'), async (req, res) =>
       })
     })
 
-    const skills = await extractSkillsFromResume(rawText)
+    // Use Groq to parse full structured portfolio data from resume in one call
+    const parsed = await parseResumeToPortfolio(rawText)
+    const { bio, skills, experience, education, projects } = parsed
 
+    // Delete old resume and create new one
+    await Resume.findOneAndDelete({ userId: req.user.id })
     const resume = await Resume.create({
       userId: req.user.id,
       originalName: req.file.originalname,
@@ -43,9 +50,39 @@ router.post('/upload', verifyToken, upload.single('resume'), async (req, res) =>
       skills,
     })
 
+    // Generate a default username from the user's name
+    const user = await User.findById(req.user.id)
+    const defaultUsername = user.name.toLowerCase().replace(/\s+/g, '') + Date.now().toString().slice(-4)
+
+    const existingPortfolio = await Portfolio.findOne({ userId: req.user.id })
+
+    let portfolio
+    if (existingPortfolio) {
+      // Update all fields extracted from resume
+      existingPortfolio.bio = bio || existingPortfolio.bio
+      existingPortfolio.skills = skills
+      existingPortfolio.experience = experience.length ? experience : existingPortfolio.experience
+      existingPortfolio.education = education.length ? education : existingPortfolio.education
+      existingPortfolio.projects = projects.length ? projects : existingPortfolio.projects
+      await existingPortfolio.save()
+      portfolio = existingPortfolio
+    } else {
+      // Create full portfolio from resume data for new users
+      portfolio = await Portfolio.create({
+        userId: req.user.id,
+        username: defaultUsername,
+        bio: bio || '',
+        skills,
+        projects: projects || [],
+        experience: experience || [],
+        education: education || []
+      })
+    }
+
     res.status(201).json({
-      message: 'Resume uploaded successfully',
-      resume
+      message: 'Resume uploaded and portfolio updated successfully',
+      resume,
+      portfolio
     })
 
   } catch (error) {

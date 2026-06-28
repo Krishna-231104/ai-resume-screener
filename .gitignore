@@ -1,9 +1,31 @@
-server/.env
+# Dependencies
+node_modules/
 server/node_modules/
 client/node_modules/
-.DS_Store
-*.log
+
+# Environment files — NEVER commit these
+.env
+server/.env
+client/.env
+*.env.local
+
+
+# Build output
 dist/
 build/
+client/dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
 .vscode/
-.env 
+.idea/
+
+# Package lock (optional — remove if you want to track it)
+# package-lock.json

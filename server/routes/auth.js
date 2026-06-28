@@ -30,7 +30,12 @@ router.post('/register', async (req, res) => {
       { expiresIn: '7d' }
     )
 
-    await sendWelcomeEmail(user.email, user.name)
+    // Send welcome email — wrapped so email errors don't break registration
+    try {
+      await sendWelcomeEmail(user.email, user.name)
+    } catch (emailErr) {
+      console.error('Welcome email failed (non-critical):', emailErr.message)
+    }
 
     res.status(201).json({ token, user: { id: user._id, name: user.name, role: user.role } })
 

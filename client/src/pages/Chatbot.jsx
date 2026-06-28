@@ -1,160 +1,148 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 function Chatbot() {
   const [messages, setMessages] = useState([
-    { id: 1, type: 'bot', text: '👋 Hi! I\'m your AI career assistant. Ask me anything about finding opportunities, improving your profile, or connecting with recruiters!' }
+    {
+      id: 1, type: 'bot',
+      text: "👋 Hi! I'm your AI assistant — think of me like ChatGPT. Ask me anything: coding help, career advice, debugging, interview prep, salary tips, or any general question. I also have access to your resume for personalized advice!"
+    }
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [showCandidates, setShowCandidates] = useState(false)
-  const [candidates, setCandidates] = useState([])
   const messagesEndRef = useRef(null)
   const navigate = useNavigate()
-
   const token = localStorage.getItem('token')
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  useEffect(() => { if (!token) navigate('/login') }, [])
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
-  const handleSendMessage = async (e) => {
+  const handleSend = async (e) => {
     e.preventDefault()
-    if (!input.trim()) return
-
-    // Add user message
-    const userMsg = { id: Date.now(), type: 'user', text: input }
-    setMessages(prev => [...prev, userMsg])
+    if (!input.trim() || loading) return
+    const question = input.trim()
+    setMessages(prev => [...prev, { id: Date.now(), type: 'user', text: question }])
     setInput('')
     setLoading(true)
-
     try {
-      const res = await fetch('http://localhost:5000/api/chatbot/chat', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chatbot/ask`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'authorization': token
-        },
-        body: JSON.stringify({ message: input })
+        headers: { 'Content-Type': 'application/json', authorization: token },
+        body: JSON.stringify({ question })
       })
-
       const data = await res.json()
-      
-      // Add bot response
-      const botMsg = { id: Date.now() + 1, type: 'bot', text: data.message }
-      setMessages(prev => [...prev, botMsg])
-
-      // Show candidates if found
-      if (data.candidates && data.candidates.length > 0) {
-        setCandidates(data.candidates)
-        setShowCandidates(true)
-      }
-    } catch (err) {
-      const errorMsg = { id: Date.now() + 1, type: 'bot', text: '❌ Sorry, something went wrong.' }
-      setMessages(prev => [...prev, errorMsg])
+      if (!res.ok) throw new Error(data.message)
+      setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', text: data.answer }])
+    } catch {
+      setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', text: '❌ Something went wrong. Please make sure the server is running.' }])
     }
     setLoading(false)
   }
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e) }
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Header */}
-      <nav className="bg-white shadow px-6 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-blue-600">🤖 AI Career Assistant</h1>
-        <button
-          onClick={() => {
-            localStorage.removeItem('token')
-            localStorage.removeItem('user')
-            navigate('/login')
-          }}
-          className="text-sm text-red-500 hover:text-red-700 font-medium"
-        >
-          Logout
-        </button>
+    <div className="page-bg" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      {/* Navbar */}
+      <nav className="navbar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <Link to="/dashboard" style={{ color: 'var(--text-secondary)', fontSize: '14px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            ← Back
+          </Link>
+          <div style={{ width: '1px', height: '20px', background: 'var(--border)' }} />
+          <span className="logo" style={{ fontSize: '20px' }}>🤖 AI Assistant</span>
+        </div>
+        <button className="btn-danger" onClick={() => { localStorage.clear(); navigate('/login') }}>Sign out</button>
       </nav>
 
-      <div className="flex flex-1">
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {messages.map(msg => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    msg.type === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-800 border border-gray-200'
-                  }`}
-                >
-                  <p className="text-sm">{msg.text}</p>
-                </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="bg-white text-gray-800 border border-gray-200 px-4 py-2 rounded-lg">
-                  <p className="text-sm">✍️ Thinking...</p>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+      {/* Chat container */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: '780px', width: '100%', margin: '0 auto', padding: '24px 24px 0', overflow: 'hidden' }}>
 
-          {/* Input */}
-          <div className="border-t border-gray-200 bg-white p-6">
-            <form onSubmit={handleSendMessage} className="flex gap-3">
-              <input
-                type="text"
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                placeholder="Ask me anything... e.g., 'How do I improve my portfolio?' or 'Find React developers'"
-                disabled={loading}
-                className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-              />
-              <button
-                type="submit"
-                disabled={loading || !input.trim()}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-              >
-                Send
-              </button>
-            </form>
-          </div>
+        {/* Messages scroll area */}
+        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {messages.map(msg => (
+            <div key={msg.id} style={{ display: 'flex', justifyContent: msg.type === 'user' ? 'flex-end' : 'flex-start', gap: '10px', alignItems: 'flex-start' }}>
+              {msg.type === 'bot' && (
+                <div style={{
+                  width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0, marginTop: '2px',
+                  background: 'linear-gradient(135deg, #f97316, #ef4444)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px'
+                }}>
+                  🤖
+                </div>
+              )}
+              <div style={{
+                maxWidth: '70%',
+                padding: '12px 18px',
+                borderRadius: msg.type === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                fontSize: '15px',
+                lineHeight: '1.65',
+                whiteSpace: 'pre-wrap',
+                background: msg.type === 'user'
+                  ? 'linear-gradient(135deg, #f97316, #ef4444)'
+                  : 'rgba(255,255,255,0.05)',
+                color: '#fff',
+                border: msg.type === 'user' ? 'none' : '1px solid var(--border)',
+                backdropFilter: 'blur(10px)',
+                boxShadow: msg.type === 'user' ? '0 4px 20px rgba(249,115,22,0.25)' : 'none'
+              }}>
+                {msg.text}
+              </div>
+            </div>
+          ))}
+
+          {/* Typing indicator */}
+          {loading && (
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg, #f97316, #ef4444)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px'
+              }}>🤖</div>
+              <div style={{
+                padding: '16px 20px', borderRadius: '18px 18px 18px 4px',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+                display: 'flex', gap: '6px', alignItems: 'center'
+              }}>
+                {[0, 150, 300].map((delay, i) => (
+                  <span key={i} style={{
+                    width: '8px', height: '8px', borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #f97316, #ef4444)',
+                    animation: `bounce-dot 1.2s ${delay}ms ease-in-out infinite`
+                  }} />
+                ))}
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
         </div>
 
-        {/* Candidates Sidebar */}
-        {showCandidates && candidates.length > 0 && (
-          <div className="w-80 bg-white border-l border-gray-200 p-6 overflow-y-auto">
-            <h3 className="font-bold text-lg mb-4">Matched Candidates</h3>
-            <div className="space-y-3">
-              {candidates.map((candidate, idx) => (
-                <div key={idx} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                  <h4 className="font-semibold text-sm">{candidate.name}</h4>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Score: <span className="font-bold text-blue-600">{(candidate.score * 100).toFixed(0)}%</span>
-                  </p>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {candidate.skills.slice(0, 3).map((skill, j) => (
-                      <span key={j} className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => setShowCandidates(false)}
-              className="mt-4 w-full text-sm text-gray-500 hover:text-gray-700"
-            >
-              Hide
-            </button>
-          </div>
-        )}
+        {/* Input bar */}
+        <div className="glass metal-top" style={{ margin: '16px 0 24px', padding: '4px 4px 4px 20px', borderRadius: '16px', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+          <textarea
+            value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
+            placeholder="Ask me anything — coding, career, interviews..."
+            disabled={loading} rows={1}
+            style={{
+              flex: 1, background: 'transparent', border: 'none', outline: 'none',
+              color: 'var(--text-primary)', fontFamily: 'DM Sans, sans-serif', fontSize: '15px',
+              resize: 'none', padding: '12px 0', maxHeight: '120px',
+              lineHeight: '1.5'
+            }}
+          />
+          <button
+            onClick={handleSend} disabled={loading || !input.trim()}
+            className="btn-primary"
+            style={{ borderRadius: '12px', padding: '12px 20px', flexShrink: 0 }}
+          >
+            Send
+          </button>
+        </div>
+        <p style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)', paddingBottom: '16px', marginTop: '-8px' }}>
+          Enter to send · Shift+Enter for new line
+        </p>
       </div>
     </div>
   )

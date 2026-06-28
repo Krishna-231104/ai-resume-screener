@@ -1,19 +1,20 @@
-# Server Dockerfile
-FROM node:20-alpine
+# Use official Node.js LTS slim image
+FROM node:20-slim
 
+# Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package files first for layer caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install only production dependencies
+RUN npm install --omit=dev
 
-# Copy app code
+# Copy all server source files
 COPY . .
 
-# Expose port
-EXPOSE 5000
+# Expose the port Render will use
+EXPOSE 10000
 
-# Start server
+# Start the server
 CMD ["node", "server.js"]

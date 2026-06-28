@@ -1,5 +1,4 @@
 const express = require('express')
-const mongoose = require('mongoose')
 const cors = require('cors')
 const morgan = require('morgan')
 const dotenv = require('dotenv')
@@ -15,7 +14,23 @@ connectDB()
 
 const app = express()
 
-app.use(cors())
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.CLIENT_URL, // e.g. https://ai-resume-screener.vercel.app
+].filter(Boolean)
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true)
+    if (allowedOrigins.includes(origin)) return callback(null, true)
+    callback(new Error(`CORS blocked: ${origin}`))
+  },
+  credentials: true
+}))
+app.options('*', cors()) // Handle preflight requests
+
 app.use(morgan('dev'))
 app.use(express.json())
 app.use('/api/auth', authRoutes)

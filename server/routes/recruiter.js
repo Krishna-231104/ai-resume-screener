@@ -23,15 +23,14 @@ router.post('/search', verifyToken, async (req, res) => {
     const portfolios = await Portfolio.find().populate('userId', 'name email')
     
     const scoredCandidates = await Promise.all(
-      portfolios.map(async (portfolio) => {
-        const resume = await Resume.findOne({ userId: portfolio.userId._id })
-        const resumeText = resume ? resume.rawText : portfolio.skills.join(', ')
-        const score = await scoreCandidate(jobDescription, resumeText)
-        return {
-          portfolio,
-          score
-        }
-      })
+      portfolios
+        .filter(portfolio => portfolio.userId) // skip orphaned portfolios
+        .map(async (portfolio) => {
+          const resume = await Resume.findOne({ userId: portfolio.userId._id })
+          const resumeText = resume ? resume.rawText : portfolio.skills.join(', ')
+          const score = await scoreCandidate(jobDescription, resumeText)
+          return { portfolio, score }
+        })
     )
 
     const ranked = scoredCandidates.sort((a, b) => b.score - a.score)
