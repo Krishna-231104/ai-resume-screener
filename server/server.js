@@ -14,22 +14,25 @@ connectDB()
 
 const app = express()
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  process.env.CLIENT_URL, // e.g. https://ai-resume-screener.vercel.app
-].filter(Boolean)
-
-app.use(cors({
+const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, Postman)
+    // Allow: no origin (Postman, curl, mobile apps)
     if (!origin) return callback(null, true)
-    if (allowedOrigins.includes(origin)) return callback(null, true)
+    // Allow: localhost dev
+    if (origin.startsWith('http://localhost')) return callback(null, true)
+    // Allow: any vercel.app subdomain (production + preview URLs)
+    if (origin.endsWith('.vercel.app')) return callback(null, true)
+    // Allow: explicit CLIENT_URL from env (e.g. custom domain)
+    if (process.env.CLIENT_URL && origin === process.env.CLIENT_URL) return callback(null, true)
+    // Block everything else
     callback(new Error(`CORS blocked: ${origin}`))
   },
   credentials: true
-}))
-app.options(/.*/, cors()) // Handle preflight requests
+}
+
+app.use(cors(corsOptions))
+app.options(/.*/, cors(corsOptions)) // Handle preflight for all routes
+
 
 
 app.use(morgan('dev'))
