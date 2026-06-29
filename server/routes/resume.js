@@ -7,6 +7,7 @@ const Portfolio = require('../models/Portfolio')
 const User = require('../models/User')
 const verifyToken = require('../middleware/verifyToken')
 const { parseResumeToPortfolio } = require('../services/langchain')
+const { embedSinglePortfolio } = require('../services/pinecone')
 
 const storage = multer.memoryStorage()
 const upload = multer({
@@ -84,6 +85,17 @@ router.post('/upload', verifyToken, upload.single('resume'), async (req, res) =>
       resume,
       portfolio
     })
+
+    // Auto-embed portfolio into Pinecone for semantic search (non-blocking)
+    try {
+      const user = await User.findById(req.user.id)
+      await embedSinglePortfolio({
+        ...portfolio.toObject(),
+        userId: { _id: user._id, name: user.name }
+      })
+    } catch (embedErr) {
+      console.error('⚠️ Pinecone auto-embed failed (non-fatal):', embedErr.message)
+    }
 
   } catch (error) {
     res.status(500).json({ message: error.message })

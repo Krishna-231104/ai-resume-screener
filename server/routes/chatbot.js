@@ -32,7 +32,7 @@ router.post('/ask', verifyToken, async (req, res) => {
   }
 })
 
-// RAG-based chat using Pinecone vector search (existing endpoint — untouched)
+// RAG-based chat using Pinecone vector search — finds relevant candidates then answers
 router.post('/chat', verifyToken, async (req, res) => {
   try {
     const { message } = req.body
@@ -41,8 +41,12 @@ router.post('/chat', verifyToken, async (req, res) => {
       return res.status(400).json({ message: 'Message required' })
     }
 
-    const response = await ragChatbot(message, req.user.id)
-    res.json(response)
+    const result = await ragChatbot(message, req.user.id)
+    res.json({
+      answer: result.message,
+      retrievedCandidates: result.retrievedCandidates,
+      mode: 'RAG (Pinecone + Groq)'
+    })
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
