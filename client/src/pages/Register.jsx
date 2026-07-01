@@ -55,7 +55,7 @@ function Register() {
                 boxShadow: formData.role === r ? '0 4px 15px rgba(249,115,22,0.3)' : 'none'
               }}
             >
-              {r === 'developer' ? '👨‍💻 Developer' : '🔍 Recruiter'}
+              {r === 'developer' ? 'Developer' : 'Recruiter'}
             </button>
           ))}
         </div>
